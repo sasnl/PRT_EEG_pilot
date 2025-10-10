@@ -124,25 +124,6 @@ def background_load_buffer(ec, audio_data, trial_id, callback=None):
     thread.start()
     return thread
 
-def create_response_circles(ec, n_options=4):
-    """Create circles for multiple choice responses"""
-    circles = []
-    circle_radius = (0.03, 0.04)
-
-    # Position circles horizontally
-    if n_options == 4:
-        x_positions = [-0.45, -0.15, 0.15, 0.45]
-    else:
-        # Distribute evenly
-        spacing = 0.6 / (n_options - 1) if n_options > 1 else 0
-        x_positions = [-0.3 + i * spacing for i in range(n_options)]
-
-    for i, x_pos in enumerate(x_positions):
-        circle = Circle(ec, radius=circle_radius, pos=(x_pos, -0.3),
-                       units='norm', fill_color=None, line_color='white', line_width=3)
-        circles.append(circle)
-
-    return circles, x_positions
 
 # %% Experiment instructions
 instruction_text = """Welcome to the Prosody Recognition Task!
@@ -151,7 +132,7 @@ You will listen to several emotional stories.
 After each story, you will answer questions about it.
 
 For multiple choice questions:
-- Click on the circle next to your answer (A, B, C, or D)
+- Answer options will be displayed on screen
 
 For open-ended questions:
 - You will be asked to provide a verbal response
@@ -311,38 +292,26 @@ with ExperimentController(**ec_args) as ec:
                 ec.wait_one_click(max_wait=np.inf)
                 response = "verbal_response"
             else:
-                # Multiple choice
-                n_options = len(options)
-                circles, x_positions = create_response_circles(ec, n_options)
+                # Multiple choice - display text only
+                # Display question text
+                ec.screen_text(q_data['question_text'], pos=[0, 0.4], units='norm',
+                              color='w', font_size=28, wrap=True)
 
-                # Display question text and options
-                ec.screen_text(q_data['question_text'], pos=[0, 0.5], units='norm',
-                              color='w', font_size=24, wrap=True)
+                # Display all answer options as text
+                y_start = 0.0
+                y_spacing = 0.15
+                for i, option_text in enumerate(options):
+                    y_pos = y_start - (i * y_spacing)
+                    ec.screen_text(option_text, pos=[0, y_pos], units='norm',
+                                  color='w', font_size=24, wrap=True)
 
-                # Draw circles and option labels
-                for i, (circle, x_pos, option_text) in enumerate(zip(circles, x_positions, options)):
-                    circle.draw()
-                    ec.screen_text(option_text, pos=[x_pos, -0.45], units='norm',
-                                  color='w', font_size=20, wrap=True)
-
+                ec.screen_text("Click to continue", pos=[0, -0.6], units='norm',
+                              color='gray', font_size=20)
                 ec.flip()
 
-                # Wait for click on circle
-                click, ind = ec.wait_for_click_on(circles, max_wait=np.inf)
-                response = options[ind] if ind is not None else "no_response"
-
-                # Show feedback
-                for i, (circle, x_pos, option_text) in enumerate(zip(circles, x_positions, options)):
-                    if i == ind:
-                        filled_circle = Circle(ec, radius=(0.03, 0.04), pos=(x_pos, -0.3),
-                                              units='norm', fill_color='white', line_color='white', line_width=3)
-                        filled_circle.draw()
-                    else:
-                        circle.draw()
-                    ec.screen_text(option_text, pos=[x_pos, -0.45], units='norm',
-                                  color='w', font_size=20, wrap=True)
-                ec.flip()
-                ec.wait_secs(0.5)
+                # Wait for click to continue
+                ec.wait_one_click(max_wait=np.inf)
+                response = "displayed"  # No subject selection needed
 
             # Store response
             story_responses[f"q{q_data['question_num']}_response"] = response

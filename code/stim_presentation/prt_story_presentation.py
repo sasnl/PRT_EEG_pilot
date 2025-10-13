@@ -127,30 +127,27 @@ def background_load_buffer(ec, audio_data, trial_id, callback=None):
 # %% Experiment instructions
 instruction_text = """Welcome to the Story Listening Game!
 
-Today you will listen to 4 different stories.
-Some stories might be happy, and some might be sad.
+You will listen to 4 different stories.
+After each story, you will answer 5 questions about it.
 
-After each story, you'll answer 5 questions about what you heard.
-Just listen carefully and try your best!
+Some questions will show you choices on the screen.
+Other questions will ask you to tell us your answer out loud.
 
-Press the SPACE bar when you're ready to start."""
+Just relax and listen carefully to each story!
 
-# Instruction before first story
-first_story_instruction = """Great job! You're ready to begin.
+Press the SPACE bar when you're ready to begin."""
 
-Here's what will happen:
-• You'll click to start each story
-• Listen carefully to the whole story
-• After the story ends, you'll hear questions
-• For each question, you'll see the answer choices on the screen
-• Some questions ask how YOU felt - there are no wrong answers!
+first_story_instruction = """Great! Now we're ready to start.
 
 Remember:
-- Listen carefully
-- Take your time
-- If you need a break, let us know
+- Listen carefully to each story
+- After the story, you'll hear questions
+- Some questions have choices (A, B, C, D)
+- Some questions you answer by talking
 
-Click anywhere when you're ready for the first story!"""
+Let's begin with the first story!
+
+Press the SPACE bar to continue."""
 
 # %% Experiment setup
 ec_args = dict(
@@ -173,7 +170,7 @@ with ExperimentController(**ec_args) as ec:
     # Show initial instructions
     ec.screen_prompt(instruction_text, live_keys=['space'])
 
-    # Show detailed instructions before first story
+    # Show instruction before first story
     ec.screen_prompt(first_story_instruction, live_keys=['space'])
 
     # Preload first story
@@ -207,6 +204,11 @@ with ExperimentController(**ec_args) as ec:
 
         # Play story
         if story_audio[story_id] is not None:
+            # Load story buffer (first story already loaded in preload section)
+            if story_idx > 0:
+                show_loading_screen(ec, f"Loading story {story_idx + 1}...")
+                ec.load_buffer(story_audio[story_id])
+
             story_duration = len(story_audio[story_id]) / fs
 
             ec.screen_text(f"Now playing: {story_name}", pos=[0, 0], units='norm', color='w')
@@ -335,13 +337,6 @@ with ExperimentController(**ec_args) as ec:
                 "question_text": q_data['question_text'],
                 "response": response
             })
-
-        # Preload next story buffer if not the last one
-        if story_idx < len(stories_df) - 1:
-            next_story_id = stories_df.iloc[story_idx + 1]['story_id']
-            if story_audio[next_story_id] is not None:
-                show_loading_screen(ec, "Loading next story...")
-                ec.load_buffer(story_audio[next_story_id])
 
         ec.wait_secs(0.5)
 

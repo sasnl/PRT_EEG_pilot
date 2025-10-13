@@ -14,7 +14,6 @@ import os
 import numpy as np
 import pandas as pd
 from expyfun import ExperimentController, decimals_to_binary
-from expyfun.visual import Circle, ProgressBar
 from expyfun.io import read_wav
 import threading
 
@@ -126,18 +125,32 @@ def background_load_buffer(ec, audio_data, trial_id, callback=None):
 
 
 # %% Experiment instructions
-instruction_text = """Welcome to the Prosody Recognition Task!
+instruction_text = """Welcome to the Story Listening Game!
 
-You will listen to several emotional stories.
-After each story, you will answer questions about it.
+Today you will listen to 4 different stories.
+Some stories might be happy, and some might be sad.
 
-For multiple choice questions:
-- Answer options will be displayed on screen
+After each story, you'll answer 5 questions about what you heard.
+Just listen carefully and try your best!
 
-For open-ended questions:
-- You will be asked to provide a verbal response
+Press the SPACE bar when you're ready to start."""
 
-Press the SPACE bar to begin."""
+# Instruction before first story
+first_story_instruction = """Great job! You're ready to begin.
+
+Here's what will happen:
+• You'll click to start each story
+• Listen carefully to the whole story
+• After the story ends, you'll hear questions
+• For each question, you'll see the answer choices on the screen
+• Some questions ask how YOU felt - there are no wrong answers!
+
+Remember:
+- Listen carefully
+- Take your time
+- If you need a break, let us know
+
+Click anywhere when you're ready for the first story!"""
 
 # %% Experiment setup
 ec_args = dict(
@@ -157,11 +170,11 @@ n_bits_story = int(np.ceil(np.log2(len(stories_df))))
 n_bits_question = int(np.ceil(np.log2(5)))  # Max 5 questions per story
 
 with ExperimentController(**ec_args) as ec:
-    # Show instructions
+    # Show initial instructions
     ec.screen_prompt(instruction_text, live_keys=['space'])
 
-    # Progress bar
-    pb = ProgressBar(ec, [0, -.2, 1.5, .2], colors=('xkcd:teal blue', 'w'))
+    # Show detailed instructions before first story
+    ec.screen_prompt(first_story_instruction, live_keys=['space'])
 
     # Preload first story
     first_story_id = stories_df.iloc[0]['story_id']
@@ -182,12 +195,11 @@ with ExperimentController(**ec_args) as ec:
         print(f"Story {story_idx + 1}/{len(stories_df)}: {story_name} ({emotion})")
         print(f"{'='*60}")
 
-        # Display progress
+        # Display story prompt
         ec.screen_text(f"Story {story_idx + 1} of {len(stories_df)}: {story_name}",
-                      pos=[0, 0.5], units='norm', color='w')
+                      pos=[0, 0.2], units='norm', color='w')
         ec.screen_text("Click anywhere to start the story",
-                      pos=[0, 0], units='norm', color='w')
-        pb.draw()
+                      pos=[0, -0.2], units='norm', color='w')
         ec.flip()
 
         # Wait for mouse click to start story
@@ -331,9 +343,6 @@ with ExperimentController(**ec_args) as ec:
                 show_loading_screen(ec, "Loading next story...")
                 ec.load_buffer(story_audio[next_story_id])
 
-        # Update progress bar
-        pb.update_bar((story_idx + 1) / len(stories_df) * 100)
-        pb.draw()
         ec.wait_secs(0.5)
 
     # End of experiment

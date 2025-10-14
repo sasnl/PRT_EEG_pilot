@@ -218,6 +218,9 @@ with ExperimentController(**ec_args) as ec:
             trial_id = f"{story_id}_story"
             ec.identify_trial(ec_id=trial_id, ttl_id=[])
 
+            # Wait until ready to start
+            ec.wait_until(trial_start_time + story_duration + pause_dur)
+
             # Start playback
             trial_start_time = ec.start_stimulus()
             ec.wait_secs(0.1)
@@ -274,6 +277,9 @@ with ExperimentController(**ec_args) as ec:
                 # Identify trial
                 q_trial_id = f"{story_id}_q{q_data['question_num']}"
                 ec.identify_trial(ec_id=q_trial_id, ttl_id=[])
+
+                # Wait until ready to start
+                ec.wait_until(trial_start_time + question_duration + pause_dur)
 
                 # Play question
                 trial_start_time = ec.start_stimulus()

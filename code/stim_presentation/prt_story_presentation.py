@@ -40,6 +40,34 @@ df = pd.read_csv(csv_path)
 stories_df = df.groupby('story_id').first().reset_index()
 print(f"Found {len(stories_df)} stories to present")
 
+# Display available stories
+print("\nAvailable stories:")
+for idx, story_row in stories_df.iterrows():
+    print(f"  {idx + 1}. {story_row['story_name']} ({story_row['story_id']}) - {story_row['emotion']}")
+
+# Ask user which story to start from
+while True:
+    start_input = input(f"\nEnter story number to start from (1-{len(stories_df)}, or press Enter for story 1): ").strip()
+
+    if start_input == "":
+        start_story_idx = 0
+        break
+
+    try:
+        start_story_num = int(start_input)
+        if 1 <= start_story_num <= len(stories_df):
+            start_story_idx = start_story_num - 1
+            break
+        else:
+            print(f"Please enter a number between 1 and {len(stories_df)}")
+    except ValueError:
+        print("Please enter a valid number")
+
+print(f"\nStarting from story {start_story_idx + 1}: {stories_df.iloc[start_story_idx]['story_name']}")
+
+# Filter stories from starting point
+stories_df = stories_df.iloc[start_story_idx:].reset_index(drop=True)
+
 # %% Preload all audio files
 print("\nPreloading audio files...")
 
@@ -125,15 +153,29 @@ def background_load_buffer(ec, audio_data, trial_id, callback=None):
 
 
 # %% Experiment instructions
-instruction_text = """Welcome to the Story Listening Game!
+instruction_text_1 = """Welcome to the Story Listening Game!
 
 You will listen to 4 different stories.
+
 After each story, you will answer 5 questions about it.
 
-Some questions will show you choices on the screen.
-Other questions will ask you to tell us your answer out loud.
+Press the SPACE bar to continue."""
+
+instruction_text_2 = """
+For all questions, tell us your answer out loud.
+
+Some questions will show you answer choices on the screen.
+You can read the choices (A, B, C, D).
+
+Other questions are open-ended, so you can answer however you like.
+
+Press the SPACE bar to continue."""
+
+instruction_text_3 = """Remember:
 
 Just relax and listen carefully to each story!
+
+Take your time and do your best.
 
 Press the SPACE bar when you're ready to begin."""
 
@@ -167,8 +209,10 @@ n_bits_story = int(np.ceil(np.log2(len(stories_df))))
 n_bits_question = int(np.ceil(np.log2(5)))  # Max 5 questions per story
 
 with ExperimentController(**ec_args) as ec:
-    # Show initial instructions
-    ec.screen_prompt(instruction_text, live_keys=['space'])
+    # Show initial instructions (3 screens)
+    ec.screen_prompt(instruction_text_1, live_keys=['space'])
+    ec.screen_prompt(instruction_text_2, live_keys=['space'])
+    ec.screen_prompt(instruction_text_3, live_keys=['space'])
 
     # Show instruction before first story
     ec.screen_prompt(first_story_instruction, live_keys=['space'])
@@ -211,8 +255,10 @@ with ExperimentController(**ec_args) as ec:
 
             story_duration = len(story_audio[story_id]) / fs
 
-            ec.screen_text(f"Now playing: {story_name}", pos=[0, 0], units='norm', color='w')
+            # Show fixation cross for 2 seconds before story starts
+            ec.screen_text("+", pos=[0, 0], units='norm', color='w', font_size=64)
             ec.flip()
+            ec.wait_secs(2.0)
 
             # Identify trial
             trial_id = f"{story_id}_story"
@@ -221,7 +267,10 @@ with ExperimentController(**ec_args) as ec:
             # Wait until ready to start
             ec.wait_until(trial_start_time + story_duration + pause_dur)
 
-            # Start playback
+            # Start playback (cross stays on screen during story)
+            ec.screen_text("+", pos=[0, 0], units='norm', color='w', font_size=64)
+            ec.flip()
+
             trial_start_time = ec.start_stimulus()
             ec.wait_secs(0.1)
 
@@ -248,6 +297,15 @@ with ExperimentController(**ec_args) as ec:
         # Pause before questions
         ec.wait_secs(pause_dur)
 
+        # Show transition to questions (only before first question)
+        ec.screen_text(f"Story finished!", pos=[0, 0.2], units='norm', color='w')
+        ec.screen_text(f"Now you will answer 5 questions about this story.",
+                      pos=[0, -0.1], units='norm', color='w')
+        ec.screen_text("Click to begin the questions",
+                      pos=[0, -0.4], units='norm', color='gray', font_size=22)
+        ec.flip()
+        ec.wait_one_click(max_wait=np.inf)
+
         # Present questions for this story
         questions = question_audio[story_id]
         story_responses = {}
@@ -255,83 +313,89 @@ with ExperimentController(**ec_args) as ec:
         for q_idx, q_data in enumerate(questions):
             print(f"\n  Question {q_data['question_num']}: {q_data['question_text'][:50]}...")
 
-            # Display prompt to click to hear question
-            ec.screen_text(f"Question {q_data['question_num']} of 5",
-                          pos=[0, 0.3], units='norm', color='w')
-            ec.screen_text("Click to hear the question",
-                          pos=[0, 0], units='norm', color='w')
-            ec.flip()
-
-            # Wait for click
-            ec.wait_one_click(max_wait=np.inf)
-
-            # Load and play question audio
-            if q_data['audio'] is not None:
-                ec.load_buffer(q_data['audio'])
-                question_duration = len(q_data['audio']) / fs
-
-                ec.screen_text(f"Question {q_data['question_num']}",
-                              pos=[0, 0], units='norm', color='w')
-                ec.flip()
-
-                # Identify trial
-                q_trial_id = f"{story_id}_q{q_data['question_num']}"
-                ec.identify_trial(ec_id=q_trial_id, ttl_id=[])
-
-                # Wait until ready to start
-                ec.wait_until(trial_start_time + question_duration + pause_dur)
-
-                # Play question
-                trial_start_time = ec.start_stimulus()
-                ec.wait_secs(0.1)
-
-                # Trigger
-                ec.stamp_triggers([(b + 1) * 4 for b in decimals_to_binary(
-                    [story_idx, q_idx], [n_bits_story, n_bits_question])])
-
-                # Wait for question to finish
-                while ec.current_time < trial_start_time + question_duration:
-                    ec.check_force_quit()
-                    ec.wait_secs(0.1)
-
-                ec.stop()
-                ec.trial_ok()
-
-            # Show answer options
+            # Parse answer options first to determine display layout
             options = parse_answer_options(q_data['answer_options'])
 
-            if options is None:
-                # Free response
-                ec.screen_text(q_data['question_text'], pos=[0, 0.3], units='norm', color='w')
-                ec.screen_text("Please provide your verbal response.",
-                              pos=[0, 0], units='norm', color='w')
-                ec.screen_text("Click when you have finished responding.",
-                              pos=[0, -0.3], units='norm', color='w')
-                ec.flip()
+            # Question replay loop - allow repeating the question with mouse click
+            question_playing = True
+            while question_playing:
+                # Load and play question audio with question text and choices displayed
+                if q_data['audio'] is not None:
+                    ec.load_buffer(q_data['audio'])
+                    question_duration = len(q_data['audio']) / fs
 
-                ec.wait_one_click(max_wait=np.inf)
+                    # Show question number in upper left
+                    ec.screen_text(f"Question {q_data['question_num']} of 5",
+                                  pos=[-0.85, 0.9], units='norm', color='w', font_size=24)
+
+                    if options is None:
+                        # Free response - show question text only
+                        ec.screen_text(q_data['question_text'], pos=[0, 0.4], units='norm',
+                                      color='w', font_size=32, wrap=True)
+                        ec.screen_text("Answer out loud after the question finishes.",
+                                      pos=[0, -0.1], units='norm', color='yellow', font_size=22)
+                    else:
+                        # Multiple choice - show question text and answer options
+                        ec.screen_text(q_data['question_text'], pos=[0, 0.5], units='norm',
+                                      color='w', font_size=28, wrap=True)
+
+                        # Display instruction
+                        ec.screen_text("Read the answer choices after the question finishes:",
+                                      pos=[0, 0.25], units='norm', color='yellow', font_size=22)
+
+                        # Display all answer options as text
+                        y_start = 0.0
+                        y_spacing = 0.15
+                        for i, option_text in enumerate(options):
+                            y_pos = y_start - (i * y_spacing)
+                            ec.screen_text(option_text, pos=[0, y_pos], units='norm',
+                                          color='w', font_size=24, wrap=True)
+
+                    # # Show control instructions
+                    # ec.screen_text("Press R = Repeat question  |  Press SPACE = Continue",
+                    #               pos=[0, -0.75], units='norm', color='cyan', font_size=18)
+
+                    # ec.flip()
+
+                    # Identify trial
+                    q_trial_id = f"{story_id}_q{q_data['question_num']}_play"
+                    ec.identify_trial(ec_id=q_trial_id, ttl_id=[])
+
+                    # Wait until ready to start
+                    ec.wait_until(trial_start_time + question_duration + pause_dur)
+
+                    # Play question
+                    trial_start_time = ec.start_stimulus()
+                    ec.wait_secs(0.1)
+
+                    # Trigger
+                    ec.stamp_triggers([(b + 1) * 4 for b in decimals_to_binary(
+                        [story_idx, q_idx], [n_bits_story, n_bits_question])])
+
+                    # Wait for question to finish
+                    while ec.current_time < trial_start_time + question_duration:
+                        ec.check_force_quit()
+                        ec.wait_secs(0.1)
+
+                    ec.stop()
+                    ec.trial_ok()
+
+                # Wait for user input: R (repeat) or space (continue)
+                pressed = ec.wait_for_presses(max_wait=np.inf, live_keys=['space', 'r'])
+
+                if pressed == 'r':
+                    # R key pressed - repeat question
+                    print(f"  Repeating question {q_data['question_num']}...")
+                    question_playing = True
+                else:
+                    # Space key pressed - continue to next question
+                    print(f"  Continuing to next question...")
+                    question_playing = False
+
+            if options is None:
                 response = "verbal_response"
             else:
-                # Multiple choice - display text only
-                # Display question text
-                ec.screen_text(q_data['question_text'], pos=[0, 0.4], units='norm',
-                              color='w', font_size=28, wrap=True)
-
-                # Display all answer options as text
-                y_start = 0.0
-                y_spacing = 0.15
-                for i, option_text in enumerate(options):
-                    y_pos = y_start - (i * y_spacing)
-                    ec.screen_text(option_text, pos=[0, y_pos], units='norm',
-                                  color='w', font_size=24, wrap=True)
-
-                ec.screen_text("Click to continue", pos=[0, -0.6], units='norm',
-                              color='gray', font_size=20)
-                ec.flip()
-
-                # Wait for click to continue
-                ec.wait_one_click(max_wait=np.inf)
-                response = "displayed"  # No subject selection needed
+                response = "displayed"
 
             # Store response
             story_responses[f"q{q_data['question_num']}_response"] = response

@@ -32,9 +32,9 @@ pause_dur = 1.0  # Pause duration between story and questions
 
 # %% Load story and question data
 # Set up paths - normalize to forward slashes for cross-platform compatibility
-pilot_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__))).replace('\\', '/')
-stim_path = f"{pilot_path}/stim_normalized"
-csv_path = f"{os.path.dirname(__file__).replace(chr(92), '/')}/story_questions_mapping.csv"
+pilot_path = "C:/Users/Admin/Desktop/PRT_EEG_pilot/"
+stim_path = pilot_path+"stim_normalized/"
+csv_path = pilot_path+"code/stim_presentation/story_questions_mapping.csv"
 
 if not os.path.exists(csv_path):
     raise FileNotFoundError(f"CSV file not found: {csv_path}")
@@ -91,7 +91,8 @@ for idx, story_row in stories_df.iterrows():
     try:
         temp, _ = read_wav(story_file)
         story_audio[story_id] = temp
-        print(f"  ✓ Story loaded: {len(temp)/fs:.1f}s")
+        # Duration is number of samples (columns) divided by sample rate
+        print(f"  ✓ Story loaded: {temp.shape[1]/fs:.1f}s")
     except Exception as e:
         print(f"  ✗ Error loading story: {e}")
         story_audio[story_id] = None
@@ -163,7 +164,7 @@ def background_load_buffer(ec, audio_data, trial_id, callback=None):
 # %% Experiment instructions
 instruction_text_1 = """Welcome to the Story Listening Game!
 
-You will listen to 4 different stories.
+You will listen to 5 different stories.
 
 After each story, you will answer 5 questions about it.
 
@@ -261,10 +262,11 @@ with ExperimentController(**ec_args) as ec:
                 show_loading_screen(ec, f"Loading story {story_idx + 1}...")
                 ec.load_buffer(story_audio[story_id])
 
-            story_duration = len(story_audio[story_id]) / fs
+            # Duration is number of samples (shape[1]) divided by sample rate
+            story_duration = story_audio[story_id].shape[1] / fs
 
-            # Show fixation cross for 2 seconds before story starts
-            ec.screen_text("+", pos=[0, 0], units='norm', color='w', font_size=64)
+            # Show fixation cross for 2 seconds before story starts, then maintain during story
+            ec.screen_text("+", pos=(0.5, 0.5), units='norm', color='white', font_size=64)
             ec.flip()
             ec.wait_secs(2.0)
 
@@ -275,17 +277,14 @@ with ExperimentController(**ec_args) as ec:
             # Wait until ready to start
             ec.wait_until(trial_start_time + story_duration + pause_dur)
 
-            # Start playback (cross stays on screen during story)
-            ec.screen_text("+", pos=[0, 0], units='norm', color='w', font_size=64)
-            ec.flip()
-
+            # Start playback - cross already on screen from above, don't flip again
             trial_start_time = ec.start_stimulus()
             ec.wait_secs(0.1)
 
             # Trigger
             ec.stamp_triggers([(b + 1) * 4 for b in decimals_to_binary([story_idx], [n_bits_story])])
 
-            # Wait for story to finish
+            # Wait for story to finish - cross stays on screen the whole time
             while ec.current_time < trial_start_time + story_duration:
                 ec.check_force_quit()
                 ec.wait_secs(0.1)
@@ -330,7 +329,8 @@ with ExperimentController(**ec_args) as ec:
                 # Load and play question audio with question text and choices displayed
                 if q_data['audio'] is not None:
                     ec.load_buffer(q_data['audio'])
-                    question_duration = len(q_data['audio']) / fs
+                    # Duration is number of samples (shape[1]) divided by sample rate
+                    question_duration = q_data['audio'].shape[1] / fs
 
                     # Show question number in upper left
                     ec.screen_text(f"Question {q_data['question_num']} of 5",

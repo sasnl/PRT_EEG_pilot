@@ -192,6 +192,7 @@ first_story_instruction = """Great! Now we're ready to start.
 
 Remember:
 - Listen carefully to each story
+- When the story plays, stare at the cross (+) on the screen
 - After the story, you'll hear questions
 - Some questions have choices (A, B, C, D)
 - Some questions you answer by talking

@@ -265,8 +265,8 @@ with ExperimentController(**ec_args) as ec:
             # Duration is number of samples (shape[1]) divided by sample rate
             story_duration = story_audio[story_id].shape[1] / fs
 
-            # Show fixation cross for 2 seconds before story starts, then maintain during story
-            ec.screen_text("+", pos=(0.5, 0.5), units='norm', color='white', font_size=64)
+            # Show fixation cross for 2 seconds before story starts
+            ec.screen_text("+", pos=(0, 0.5), units='norm', color='white', font_size=64)
             ec.flip()
             ec.wait_secs(2.0)
 
@@ -277,8 +277,12 @@ with ExperimentController(**ec_args) as ec:
             # Wait until ready to start
             ec.wait_until(trial_start_time + story_duration + pause_dur)
 
-            # Start playback - cross already on screen from above, don't flip again
+            # Start playback
             trial_start_time = ec.start_stimulus()
+
+            # Redraw cross after starting stimulus so it stays on screen during story
+            ec.screen_text("+", pos=(0, 0.5), units='norm', color='white', font_size=64)
+            ec.flip()
             ec.wait_secs(0.1)
 
             # Trigger
@@ -391,7 +395,7 @@ with ExperimentController(**ec_args) as ec:
                 # Wait for user input: R (repeat) or space (continue)
                 pressed = ec.wait_for_presses(max_wait=np.inf, live_keys=['space', 'r'])
 
-                if pressed == 'r':
+                if pressed and pressed[0] == 'r':
                     # R key pressed - repeat question
                     print(f"  Repeating question {q_data['question_num']}...")
                     question_playing = True

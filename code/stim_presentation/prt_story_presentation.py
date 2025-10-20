@@ -85,7 +85,9 @@ for idx, story_row in stories_df.iterrows():
     story_name = story_row['story_name']
 
     # Load story audio
-    story_file = os.path.join(pilot_path, story_row['story_path'])
+    # Normalize path separators for cross-platform compatibility
+    story_path_normalized = story_row['story_path'].replace('/', os.sep)
+    story_file = os.path.join(pilot_path, story_path_normalized)
     print(f"Loading story: {story_name} ({story_id})")
     try:
         temp, _ = read_wav(story_file)
@@ -100,7 +102,9 @@ for idx, story_row in stories_df.iterrows():
     question_audio[story_id] = []
 
     for _, q_row in story_questions.iterrows():
-        q_file = os.path.join(pilot_path, q_row['question_audio_path'])
+        # Normalize path separators for cross-platform compatibility
+        question_path_normalized = q_row['question_audio_path'].replace('/', os.sep)
+        q_file = os.path.join(pilot_path, question_path_normalized)
         try:
             temp, _ = read_wav(q_file)
             question_audio[story_id].append({

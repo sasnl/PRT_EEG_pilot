@@ -9,7 +9,13 @@ and visual response options using mouse clicks.
 
 @author: Tong
 """
-
+# %% 
+import os
+os.environ['SD_ENABLE_ASIO'] = '1'
+import sounddevice as sd
+sd.query_hostapi()
+sd.query_devices()
+# %% Import libraries
 import os
 import numpy as np
 import pandas as pd

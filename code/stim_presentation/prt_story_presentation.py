@@ -31,10 +31,10 @@ stim_db = 65  # Stimulus volume in dB
 pause_dur = 1.0  # Pause duration between story and questions
 
 # %% Load story and question data
-# Set up paths
-pilot_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-stim_path = os.path.join(pilot_path, "stim_normalized")
-csv_path = os.path.join(os.path.dirname(__file__), "story_questions_mapping.csv")
+# Set up paths - normalize to forward slashes for cross-platform compatibility
+pilot_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__))).replace('\\', '/')
+stim_path = f"{pilot_path}/stim_normalized"
+csv_path = f"{os.path.dirname(__file__).replace(chr(92), '/')}/story_questions_mapping.csv"
 
 if not os.path.exists(csv_path):
     raise FileNotFoundError(f"CSV file not found: {csv_path}")
@@ -85,9 +85,8 @@ for idx, story_row in stories_df.iterrows():
     story_name = story_row['story_name']
 
     # Load story audio
-    # Normalize path separators for cross-platform compatibility
-    story_path_normalized = story_row['story_path'].replace('/', os.sep)
-    story_file = os.path.join(pilot_path, story_path_normalized)
+    # Normalize to forward slashes (works on all platforms)
+    story_file = f"{pilot_path}/{story_row['story_path']}"
     print(f"Loading story: {story_name} ({story_id})")
     try:
         temp, _ = read_wav(story_file)
@@ -102,9 +101,8 @@ for idx, story_row in stories_df.iterrows():
     question_audio[story_id] = []
 
     for _, q_row in story_questions.iterrows():
-        # Normalize path separators for cross-platform compatibility
-        question_path_normalized = q_row['question_audio_path'].replace('/', os.sep)
-        q_file = os.path.join(pilot_path, question_path_normalized)
+        # Normalize to forward slashes (works on all platforms)
+        q_file = f"{pilot_path}/{q_row['question_audio_path']}"
         try:
             temp, _ = read_wav(q_file)
             question_audio[story_id].append({

@@ -32,9 +32,9 @@ pause_dur = 1.0  # Pause duration between story and questions
 
 # %% Load story and question data
 # Set up paths
-pilot_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + "/"
-stim_path = pilot_path + "stim_normalized/"
-csv_path = stim_path + "story_questions_mapping.csv"
+pilot_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+stim_path = os.path.join(pilot_path, "stim_normalized")
+csv_path = os.path.join(stim_path, "story_questions_mapping.csv")
 
 if not os.path.exists(csv_path):
     raise FileNotFoundError(f"CSV file not found: {csv_path}")
@@ -85,7 +85,7 @@ for idx, story_row in stories_df.iterrows():
     story_name = story_row['story_name']
 
     # Load story audio
-    story_file = pilot_path + story_row['story_path']
+    story_file = os.path.join(pilot_path, story_row['story_path'])
     print(f"Loading story: {story_name} ({story_id})")
     try:
         temp, _ = read_wav(story_file)
@@ -100,7 +100,7 @@ for idx, story_row in stories_df.iterrows():
     question_audio[story_id] = []
 
     for _, q_row in story_questions.iterrows():
-        q_file = pilot_path + q_row['question_audio_path']
+        q_file = os.path.join(pilot_path, q_row['question_audio_path'])
         try:
             temp, _ = read_wav(q_file)
             question_audio[story_id].append({

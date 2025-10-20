@@ -34,7 +34,7 @@ pause_dur = 1.0  # Pause duration between story and questions
 # Set up paths
 pilot_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 stim_path = os.path.join(pilot_path, "stim_normalized")
-csv_path = os.path.join(stim_path, "story_questions_mapping.csv")
+csv_path = os.path.join(os.path.dirname(__file__), "story_questions_mapping.csv")
 
 if not os.path.exists(csv_path):
     raise FileNotFoundError(f"CSV file not found: {csv_path}")

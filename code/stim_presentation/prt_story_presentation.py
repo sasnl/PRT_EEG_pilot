@@ -328,76 +328,63 @@ with ExperimentController(**ec_args) as ec:
             # Parse answer options first to determine display layout
             options = parse_answer_options(q_data['answer_options'])
 
-            # Repeat question loop
-            repeat_question = True
-            while repeat_question:
-                if q_data['audio'] is not None:
-                    # Load audio
-                    ec.load_buffer(q_data['audio'])
-                    question_duration = q_data['audio'].shape[1] / fs
+            if q_data['audio'] is not None:
+                # Load audio
+                ec.load_buffer(q_data['audio'])
+                question_duration = q_data['audio'].shape[1] / fs
 
-                    # Identify trial
-                    q_trial_id = f"{story_id}_q{q_data['question_num']}_play"
-                    ec.identify_trial(ec_id=q_trial_id, ttl_id=[])
+                # Identify trial
+                q_trial_id = f"{story_id}_q{q_data['question_num']}_play"
+                ec.identify_trial(ec_id=q_trial_id, ttl_id=[])
 
-                    # Wait until ready
-                    ec.wait_until(trial_start_time + question_duration + pause_dur)
+                # Wait until ready
+                ec.wait_until(trial_start_time + question_duration + pause_dur)
 
-                    # Start audio playback
-                    trial_start_time = ec.start_stimulus()
+                # Start audio playback
+                trial_start_time = ec.start_stimulus()
 
-                    # Display question and options RIGHT AFTER starting audio
-                    ec.screen_text(f"Question {q_data['question_num']} of 5",
-                                  pos=[0, 0.3], units='norm', color='w', font_size=24)
+                # Display question and options RIGHT AFTER starting audio
+                ec.screen_text(f"Question {q_data['question_num']} of 5",
+                              pos=[0, 0.3], units='norm', color='w', font_size=24)
 
-                    if options is None:
-                        # Free response
-                        ec.screen_text(q_data['question_text'], pos=[0, 0.4], units='norm',
-                                      color='w', font_size=32, wrap=True)
-                        ec.screen_text("Answer out loud after the question finishes.",
-                                      pos=[0, -0.1], units='norm', color='yellow', font_size=22)
-                    else:
-                        # Multiple choice
-                        ec.screen_text(q_data['question_text'], pos=[0, 0.5], units='norm',
-                                      color='w', font_size=28, wrap=True)
-                        ec.screen_text("Read the answer choices after the question finishes:",
-                                      pos=[0, 0.25], units='norm', color='yellow', font_size=22)
+                if options is None:
+                    # Free response
+                    ec.screen_text(q_data['question_text'], pos=[0, 0.4], units='norm',
+                                  color='w', font_size=32, wrap=True)
+                    ec.screen_text("Answer out loud after the question finishes.",
+                                  pos=[0, -0.1], units='norm', color='yellow', font_size=22)
+                else:
+                    # Multiple choice
+                    ec.screen_text(q_data['question_text'], pos=[0, 0.5], units='norm',
+                                  color='w', font_size=28, wrap=True)
+                    ec.screen_text("Read the answer choices after the question finishes:",
+                                  pos=[0, 0.25], units='norm', color='yellow', font_size=22)
 
-                        # Display answer options
-                        y_start = 0.0
-                        y_spacing = 0.15
-                        for i, option_text in enumerate(options):
-                            y_pos = y_start - (i * y_spacing)
-                            ec.screen_text(option_text, pos=[0, y_pos], units='norm',
-                                          color='w', font_size=24, wrap=True)
+                    # Display answer options
+                    y_start = 0.0
+                    y_spacing = 0.15
+                    for i, option_text in enumerate(options):
+                        y_pos = y_start - (i * y_spacing)
+                        ec.screen_text(option_text, pos=[0, y_pos], units='norm',
+                                      color='w', font_size=24, wrap=True)
 
-                    ec.flip()
+                ec.flip()
+                ec.wait_secs(0.1)
+
+                # Trigger
+                ec.stamp_triggers([(b + 1) * 4 for b in decimals_to_binary(
+                    [story_idx, q_idx], [n_bits_story, n_bits_question])])
+
+                # Wait for audio to finish (text stays visible)
+                while ec.current_time < trial_start_time + question_duration:
+                    ec.check_force_quit()
                     ec.wait_secs(0.1)
 
-                    # Trigger
-                    ec.stamp_triggers([(b + 1) * 4 for b in decimals_to_binary(
-                        [story_idx, q_idx], [n_bits_story, n_bits_question])])
+                ec.stop()
+                ec.trial_ok()
 
-                    # Wait for audio to finish (text stays visible)
-                    while ec.current_time < trial_start_time + question_duration:
-                        ec.check_force_quit()
-                        ec.wait_secs(0.1)
-
-                    ec.stop()
-                    ec.trial_ok()
-
-                # After audio finishes, wait for key press
-                pressed = ec.wait_for_presses(max_wait=np.inf, live_keys=['space', 'r'])
-
-                if pressed and len(pressed) > 0:
-                    if pressed[0] == 'r':
-                        print(f"  Repeating question {q_data['question_num']}...")
-                        # Loop continues to repeat
-                    elif pressed[0] == 'space':
-                        print(f"  Continuing to next question...")
-                        repeat_question = False
-                        break
-                # If nothing pressed (shouldn't happen with max_wait=np.inf), loop continues
+            # After audio finishes, wait for space to continue (experimenter control only)
+            ec.wait_for_presses(max_wait=np.inf, live_keys=['space'])
 
             if options is None:
                 response = "verbal_response"

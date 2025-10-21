@@ -383,7 +383,35 @@ with ExperimentController(**ec_args) as ec:
                 ec.stop()
                 ec.trial_ok()
 
-            # After audio finishes, wait for space to continue (experimenter control only)
+                # Keep question visible and wait for space to continue (experimenter control only)
+                # Redraw the question text so it stays on screen
+                ec.screen_text(f"Question {q_data['question_num']} of 5",
+                              pos=[0, 0.3], units='norm', color='w', font_size=24)
+
+                if options is None:
+                    # Free response
+                    ec.screen_text(q_data['question_text'], pos=[0, 0.4], units='norm',
+                                  color='w', font_size=32, wrap=True)
+                    ec.screen_text("Answer out loud.",
+                                  pos=[0, -0.1], units='norm', color='yellow', font_size=22)
+                else:
+                    # Multiple choice
+                    ec.screen_text(q_data['question_text'], pos=[0, 0.5], units='norm',
+                                  color='w', font_size=28, wrap=True)
+                    ec.screen_text("Read your answer choice:",
+                                  pos=[0, 0.25], units='norm', color='yellow', font_size=22)
+
+                    # Display answer options
+                    y_start = 0.0
+                    y_spacing = 0.15
+                    for i, option_text in enumerate(options):
+                        y_pos = y_start - (i * y_spacing)
+                        ec.screen_text(option_text, pos=[0, y_pos], units='norm',
+                                      color='w', font_size=24, wrap=True)
+
+                ec.flip()
+
+            # Wait for experimenter to press space
             ec.wait_for_presses(max_wait=np.inf, live_keys=['space'])
 
             if options is None:

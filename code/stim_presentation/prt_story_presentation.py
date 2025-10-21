@@ -267,7 +267,7 @@ with ExperimentController(**ec_args) as ec:
             story_duration = story_audio[story_id].shape[1] / fs
 
             # Show fixation cross for 2 seconds before story starts
-            ec.screen_text("+", pos=(0.5, 0), units='norm', color='white', font_size=64)
+            ec.screen_text("+", pos=(0.75, 0), units='norm', color='white', font_size=64)
             ec.flip()
             ec.wait_secs(2.0)
 
@@ -282,7 +282,7 @@ with ExperimentController(**ec_args) as ec:
             trial_start_time = ec.start_stimulus()
 
             # Redraw cross after starting stimulus so it stays on screen during story
-            ec.screen_text("+", pos=(0.5, 0), units='norm', color='white', font_size=64)
+            ec.screen_text("+", pos=(0.75, 0), units='norm', color='white', font_size=64)
             ec.flip()
             ec.wait_secs(0.1)
 
@@ -364,11 +364,7 @@ with ExperimentController(**ec_args) as ec:
                             ec.screen_text(option_text, pos=[0, y_pos], units='norm',
                                           color='w', font_size=24, wrap=True)
 
-                    # # Show control instructions
-                    # ec.screen_text("Press R = Repeat question  |  Press SPACE = Continue",
-                    #               pos=[0, -0.75], units='norm', color='cyan', font_size=18)
-
-                    # ec.flip()
+                    ec.flip()
 
                     # Identify trial
                     q_trial_id = f"{story_id}_q{q_data['question_num']}_play"

@@ -328,86 +328,76 @@ with ExperimentController(**ec_args) as ec:
             # Parse answer options first to determine display layout
             options = parse_answer_options(q_data['answer_options'])
 
-            # Function to display question screen
-            def show_question_screen():
-                # Show question number in upper left
-                ec.screen_text(f"Question {q_data['question_num']} of 5",
-                              pos=[0, 0.3], units='norm', color='w', font_size=24)
-
-                if options is None:
-                    # Free response - show question text only
-                    ec.screen_text(q_data['question_text'], pos=[0, 0.4], units='norm',
-                                  color='w', font_size=32, wrap=True)
-                    ec.screen_text("Answer out loud after the question finishes.",
-                                  pos=[0, -0.1], units='norm', color='yellow', font_size=22)
-                else:
-                    # Multiple choice - show question text and answer options
-                    ec.screen_text(q_data['question_text'], pos=[0, 0.5], units='norm',
-                                  color='w', font_size=28, wrap=True)
-
-                    # Display instruction
-                    ec.screen_text("Read the answer choices after the question finishes:",
-                                  pos=[0, 0.25], units='norm', color='yellow', font_size=22)
-
-                    # Display all answer options as text
-                    y_start = 0.0
-                    y_spacing = 0.15
-                    for i, option_text in enumerate(options):
-                        y_pos = y_start - (i * y_spacing)
-                        ec.screen_text(option_text, pos=[0, y_pos], units='norm',
-                                      color='w', font_size=24, wrap=True)
-                ec.flip()
-
-            # Function to play question audio
-            def play_question():
+            # Repeat question loop
+            repeat_question = True
+            while repeat_question:
                 if q_data['audio'] is not None:
+                    # Load audio
                     ec.load_buffer(q_data['audio'])
                     question_duration = q_data['audio'].shape[1] / fs
 
-                    # Display question before playing
-                    show_question_screen()
+                    # Display question and options BEFORE starting audio
+                    ec.screen_text(f"Question {q_data['question_num']} of 5",
+                                  pos=[0, 0.3], units='norm', color='w', font_size=24)
+
+                    if options is None:
+                        # Free response
+                        ec.screen_text(q_data['question_text'], pos=[0, 0.4], units='norm',
+                                      color='w', font_size=32, wrap=True)
+                        ec.screen_text("Answer out loud after the question finishes.",
+                                      pos=[0, -0.1], units='norm', color='yellow', font_size=22)
+                    else:
+                        # Multiple choice
+                        ec.screen_text(q_data['question_text'], pos=[0, 0.5], units='norm',
+                                      color='w', font_size=28, wrap=True)
+                        ec.screen_text("Read the answer choices after the question finishes:",
+                                      pos=[0, 0.25], units='norm', color='yellow', font_size=22)
+
+                        # Display answer options
+                        y_start = 0.0
+                        y_spacing = 0.15
+                        for i, option_text in enumerate(options):
+                            y_pos = y_start - (i * y_spacing)
+                            ec.screen_text(option_text, pos=[0, y_pos], units='norm',
+                                          color='w', font_size=24, wrap=True)
+
+                    ec.flip()
 
                     # Identify trial
                     q_trial_id = f"{story_id}_q{q_data['question_num']}_play"
                     ec.identify_trial(ec_id=q_trial_id, ttl_id=[])
 
-                    # Wait until ready to start
+                    # Wait until ready
                     ec.wait_until(trial_start_time + question_duration + pause_dur)
 
-                    # Play question
-                    trial_start_time_local = ec.start_stimulus()
+                    # Start audio playback
+                    trial_start_time = ec.start_stimulus()
                     ec.wait_secs(0.1)
 
                     # Trigger
                     ec.stamp_triggers([(b + 1) * 4 for b in decimals_to_binary(
                         [story_idx, q_idx], [n_bits_story, n_bits_question])])
 
-                    # Wait for question to finish - text stays on screen
-                    while ec.current_time < trial_start_time_local + question_duration:
+                    # Wait for audio to finish (text stays visible)
+                    while ec.current_time < trial_start_time + question_duration:
                         ec.check_force_quit()
                         ec.wait_secs(0.1)
 
                     ec.stop()
                     ec.trial_ok()
 
-                    return trial_start_time_local
-                return trial_start_time
-
-            # Play question and get key press response
-            repeat_question = True
-            while repeat_question:
-                trial_start_time = play_question()
-
-                # Show question screen again and wait for key press
-                show_question_screen()
+                # After audio finishes, wait for key press
                 pressed = ec.wait_for_presses(max_wait=np.inf, live_keys=['space', 'r'])
 
-                if pressed and pressed[0] == 'r':
-                    print(f"  Repeating question {q_data['question_num']}...")
-                    repeat_question = True
-                else:
-                    print(f"  Continuing to next question...")
-                    repeat_question = False
+                if pressed and len(pressed) > 0:
+                    if pressed[0] == 'r':
+                        print(f"  Repeating question {q_data['question_num']}...")
+                        # Loop continues to repeat
+                    elif pressed[0] == 'space':
+                        print(f"  Continuing to next question...")
+                        repeat_question = False
+                        break
+                # If nothing pressed (shouldn't happen with max_wait=np.inf), loop continues
 
             if options is None:
                 response = "verbal_response"

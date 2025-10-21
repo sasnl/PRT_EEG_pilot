@@ -215,7 +215,7 @@ ec_args = dict(
 )
 
 # %% Run experiment
-n_bits_story = int(np.ceil(np.log2(len(stories_df))))
+n_bits_story = int(np.ceil(np.log2(5))) # 5 stories
 n_bits_question = int(np.ceil(np.log2(5)))  # Max 5 questions per story
 
 with ExperimentController(**ec_args) as ec:
@@ -363,9 +363,8 @@ with ExperimentController(**ec_args) as ec:
                             y_pos = y_start - (i * y_spacing)
                             ec.screen_text(option_text, pos=[0, y_pos], units='norm',
                                           color='w', font_size=24, wrap=True)
-
-                    ec.flip()
-
+                        
+                        ec.flip()
                     # Identify trial
                     q_trial_id = f"{story_id}_q{q_data['question_num']}_play"
                     ec.identify_trial(ec_id=q_trial_id, ttl_id=[])

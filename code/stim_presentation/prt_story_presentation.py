@@ -345,7 +345,7 @@ with ExperimentController(**ec_args) as ec:
 
                 # Display question and options RIGHT AFTER starting audio
                 ec.screen_text(f"Question {q_data['question_num']} of 5",
-                              pos=[0, 0.3], units='norm', color='w', font_size=24)
+                              pos=[0, 0.5], units='norm', color='w', font_size=18)
 
                 if options is None:
                     # Free response
@@ -386,7 +386,7 @@ with ExperimentController(**ec_args) as ec:
                 # Keep question visible and wait for space to continue (experimenter control only)
                 # Redraw the question text so it stays on screen
                 ec.screen_text(f"Question {q_data['question_num']} of 5",
-                              pos=[0, 0.3], units='norm', color='w', font_size=24)
+                              pos=[0, 0.5], units='norm', color='w', font_size=18)
 
                 if options is None:
                     # Free response

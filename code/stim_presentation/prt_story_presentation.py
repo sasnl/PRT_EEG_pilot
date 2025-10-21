@@ -336,7 +336,17 @@ with ExperimentController(**ec_args) as ec:
                     ec.load_buffer(q_data['audio'])
                     question_duration = q_data['audio'].shape[1] / fs
 
-                    # Display question and options BEFORE starting audio
+                    # Identify trial
+                    q_trial_id = f"{story_id}_q{q_data['question_num']}_play"
+                    ec.identify_trial(ec_id=q_trial_id, ttl_id=[])
+
+                    # Wait until ready
+                    ec.wait_until(trial_start_time + question_duration + pause_dur)
+
+                    # Start audio playback
+                    trial_start_time = ec.start_stimulus()
+
+                    # Display question and options RIGHT AFTER starting audio
                     ec.screen_text(f"Question {q_data['question_num']} of 5",
                                   pos=[0, 0.3], units='norm', color='w', font_size=24)
 
@@ -362,16 +372,6 @@ with ExperimentController(**ec_args) as ec:
                                           color='w', font_size=24, wrap=True)
 
                     ec.flip()
-
-                    # Identify trial
-                    q_trial_id = f"{story_id}_q{q_data['question_num']}_play"
-                    ec.identify_trial(ec_id=q_trial_id, ttl_id=[])
-
-                    # Wait until ready
-                    ec.wait_until(trial_start_time + question_duration + pause_dur)
-
-                    # Start audio playback
-                    trial_start_time = ec.start_stimulus()
                     ec.wait_secs(0.1)
 
                     # Trigger

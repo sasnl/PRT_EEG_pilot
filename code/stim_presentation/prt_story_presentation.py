@@ -337,34 +337,6 @@ with ExperimentController(**ec_args) as ec:
                     # Duration is number of samples (shape[1]) divided by sample rate
                     question_duration = q_data['audio'].shape[1] / fs
 
-                    # Show question number in upper left
-                    ec.screen_text(f"Question {q_data['question_num']} of 5",
-                                  pos=[-0.85, 0.9], units='norm', color='w', font_size=24)
-
-                    if options is None:
-                        # Free response - show question text only
-                        ec.screen_text(q_data['question_text'], pos=[0, 0.4], units='norm',
-                                      color='w', font_size=32, wrap=True)
-                        ec.screen_text("Answer out loud after the question finishes.",
-                                      pos=[0, -0.1], units='norm', color='yellow', font_size=22)
-                    else:
-                        # Multiple choice - show question text and answer options
-                        ec.screen_text(q_data['question_text'], pos=[0, 0.5], units='norm',
-                                      color='w', font_size=28, wrap=True)
-
-                        # Display instruction
-                        ec.screen_text("Read the answer choices after the question finishes:",
-                                      pos=[0, 0.25], units='norm', color='yellow', font_size=22)
-
-                        # Display all answer options as text
-                        y_start = 0.0
-                        y_spacing = 0.15
-                        for i, option_text in enumerate(options):
-                            y_pos = y_start - (i * y_spacing)
-                            ec.screen_text(option_text, pos=[0, y_pos], units='norm',
-                                          color='w', font_size=24, wrap=True)
-                        
-                        ec.flip()
                     # Identify trial
                     q_trial_id = f"{story_id}_q{q_data['question_num']}_play"
                     ec.identify_trial(ec_id=q_trial_id, ttl_id=[])
@@ -387,6 +359,36 @@ with ExperimentController(**ec_args) as ec:
 
                     ec.stop()
                     ec.trial_ok()
+
+                    # Redisplay question and options for response collection
+                    # Show question number in upper left
+                    ec.screen_text(f"Question {q_data['question_num']} of 5",
+                                  pos=[-0.85, 0.9], units='norm', color='w', font_size=24)
+
+                    if options is None:
+                        # Free response - show question text only
+                        ec.screen_text(q_data['question_text'], pos=[0, 0.4], units='norm',
+                                      color='w', font_size=32, wrap=True)
+                        ec.screen_text("Answer out loud.",
+                                      pos=[0, -0.1], units='norm', color='yellow', font_size=22)
+                    else:
+                        # Multiple choice - show question text and answer options
+                        ec.screen_text(q_data['question_text'], pos=[0, 0.5], units='norm',
+                                      color='w', font_size=28, wrap=True)
+
+                        # Display instruction
+                        ec.screen_text("Read your answer choice:",
+                                      pos=[0, 0.25], units='norm', color='yellow', font_size=22)
+
+                        # Display all answer options as text
+                        y_start = 0.0
+                        y_spacing = 0.15
+                        for i, option_text in enumerate(options):
+                            y_pos = y_start - (i * y_spacing)
+                            ec.screen_text(option_text, pos=[0, y_pos], units='norm',
+                                          color='w', font_size=24, wrap=True)
+
+                    ec.flip()
 
                 # Wait for user input: R (repeat) or space (continue)
                 pressed = ec.wait_for_presses(max_wait=np.inf, live_keys=['space', 'r'])

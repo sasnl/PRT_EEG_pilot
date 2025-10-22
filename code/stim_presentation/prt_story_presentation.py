@@ -5,7 +5,7 @@ PRT Story Presentation Experiment Script
 
 This script presents emotional prosody stories to participants and collects responses
 to comprehension questions. Stories are played with audio, followed by question audio
-and visual response options using mouse clicks.
+and visual response options.
 
 @author: Tong
 """
@@ -193,10 +193,15 @@ Take your time and do your best.
 first_story_instruction = """Great! Now we're ready to start.
 
 Remember:
+
 - Listen carefully to each story
+
 - When the story plays, stare at the cross (+) on the screen
+
 - After the story, you'll hear questions
+
 - Some questions have choices (A, B, C, D)
+
 - Some questions you answer by talking
 
 Let's begin with the first story!
@@ -292,7 +297,7 @@ with ExperimentController(**ec_args) as ec:
                       pos=[0, 0.2], units='norm', color='w')
         ec.flip()
 
-        # Wait for mouse click to start story
+        # Wait for space press to start story
         ec.wait_one_press(max_wait=np.inf, live_keys=['space'])
 
         # Play story
@@ -348,10 +353,9 @@ with ExperimentController(**ec_args) as ec:
         ec.screen_text(f"Story finished!", pos=[0, 0.2], units='norm', color='w')
         ec.screen_text(f"Now you will answer 5 questions about this story.",
                       pos=[0, -0.1], units='norm', color='w')
-        ec.screen_text("Click to begin the questions",
-                      pos=[0, -0.4], units='norm', color='gray', font_size=22)
+
         ec.flip()
-        ec.wait_one_click(max_wait=np.inf)
+        ec.wait_one_press(max_wait=np.inf, live_keys=['space'])
 
         # Present questions for this story
         questions = question_audio[story_id]

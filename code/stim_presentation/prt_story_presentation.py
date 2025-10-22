@@ -226,17 +226,15 @@ with ExperimentController(**ec_args) as ec:
     ec.screen_prompt(instruction_text_2, live_keys=['space'])
     ec.screen_prompt(instruction_text_3, live_keys=['space'])
 
-    # Show instruction before first story
-    ec.screen_prompt(first_story_instruction, live_keys=['space'])
 
-    # Preload first story
+    # Test trial - play first 10 seconds of first story for sound check
+    # Preload first story for sound check
     first_story_id = stories_df.iloc[0]['story_id']
-    print(f"\nPreloading first story: {first_story_id}")
-    show_loading_screen(ec, "Preparing first story...")
+    print(f"\nPreloading first story for sound check: {first_story_id}")
+    show_loading_screen(ec, "Preparing sound check...")
     if story_audio[first_story_id] is not None:
         ec.load_buffer(story_audio[first_story_id])
 
-    # Test trial - play first 10 seconds of first story for sound check
     ec.screen_text("Sound Check", pos=[0, 0.3], units='norm', color='w', font_size=32)
     ec.screen_text("We will play 10 seconds of the first story to check the sound.",
                   pos=[0, 0], units='norm', color='w', font_size=24, wrap=True)
@@ -247,6 +245,9 @@ with ExperimentController(**ec_args) as ec:
     ec.screen_text("+", pos=(0.75, 0), units='norm', color='white', font_size=64)
     ec.flip()
     ec.wait_secs(1.0)
+
+    # Identify trial before starting
+    ec.identify_trial(ec_id="sound_check", ttl_id=[])
 
     # Play first 10 seconds
     print("\nPlaying 10-second sound check...")
@@ -263,6 +264,7 @@ with ExperimentController(**ec_args) as ec:
         ec.wait_secs(0.1)
 
     ec.stop()
+    ec.trial_ok()
     print("Sound check completed!")
 
     # Ask if sound is okay
@@ -270,8 +272,8 @@ with ExperimentController(**ec_args) as ec:
     ec.flip()
     ec.wait_one_press(max_wait=np.inf, live_keys=['space'])
 
-    # Reload first story buffer for actual experiment
-    ec.load_buffer(story_audio[first_story_id])
+    # Show instruction before first story
+    ec.screen_prompt(first_story_instruction, live_keys=['space'])
 
     trial_start_time = -np.inf
 
@@ -296,9 +298,8 @@ with ExperimentController(**ec_args) as ec:
         # Play story
         if story_audio[story_id] is not None:
             # Load story buffer (first story already loaded in preload section)
-            if story_idx > 0:
-                show_loading_screen(ec, f"Loading story {story_idx + 1}...")
-                ec.load_buffer(story_audio[story_id])
+            show_loading_screen(ec, f"Loading story {story_idx + 1}...")
+            ec.load_buffer(story_audio[story_id])
 
             # Duration is number of samples (shape[1]) divided by sample rate
             story_duration = story_audio[story_id].shape[1] / fs

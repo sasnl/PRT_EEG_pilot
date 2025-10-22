@@ -166,9 +166,11 @@ instruction_text_1 = """Welcome to the Story Listening Game!
 
 You will listen to 5 different stories.
 
+When the story plays, stare at the cross (+) on the screen.
+
 After each story, you will answer 5 questions about it.
 
-Press the SPACE bar to continue."""
+"""
 
 instruction_text_2 = """
 For all questions, tell us your answer out loud.
@@ -178,7 +180,7 @@ You can read the choices (A, B, C, D).
 
 Other questions are open-ended, so you can answer however you like.
 
-Press the SPACE bar to continue."""
+"""
 
 instruction_text_3 = """Remember:
 
@@ -186,7 +188,7 @@ Just relax and listen carefully to each story!
 
 Take your time and do your best.
 
-Press the SPACE bar when you're ready to begin."""
+"""
 
 first_story_instruction = """Great! Now we're ready to start.
 
@@ -199,7 +201,7 @@ Remember:
 
 Let's begin with the first story!
 
-Press the SPACE bar to continue."""
+"""
 
 # %% Experiment setup
 ec_args = dict(
@@ -249,12 +251,10 @@ with ExperimentController(**ec_args) as ec:
         # Display story prompt
         ec.screen_text(f"Story {story_idx + 1} of {len(stories_df)}: {story_name}",
                       pos=[0, 0.2], units='norm', color='w')
-        ec.screen_text("Click anywhere to start the story",
-                      pos=[0, -0.2], units='norm', color='w')
         ec.flip()
 
         # Wait for mouse click to start story
-        ec.wait_one_click(max_wait=np.inf)
+        ec.wait_one_press(max_wait=np.inf, live_keys=['space'])
 
         # Play story
         if story_audio[story_id] is not None:
@@ -269,16 +269,13 @@ with ExperimentController(**ec_args) as ec:
             # Show fixation cross for 2 seconds before story starts
             ec.screen_text("+", pos=(0.75, 0), units='norm', color='white', font_size=64)
             ec.flip()
-            ec.wait_secs(2.0)
+            ec.wait_secs(1.0)
 
             # Identify trial
             trial_id = f"{story_id}_story"
             ec.identify_trial(ec_id=trial_id, ttl_id=[])
 
-            # Wait until ready to start
-            ec.wait_until(trial_start_time + story_duration + pause_dur)
-
-            # Start playback
+            # Start playback immediately (no wait needed between stories)
             trial_start_time = ec.start_stimulus()
 
             # Redraw cross after starting stimulus so it stays on screen during story
@@ -337,15 +334,12 @@ with ExperimentController(**ec_args) as ec:
                 q_trial_id = f"{story_id}_q{q_data['question_num']}_play"
                 ec.identify_trial(ec_id=q_trial_id, ttl_id=[])
 
-                # Wait until ready
-                ec.wait_until(trial_start_time + question_duration + pause_dur)
-
-                # Start audio playback
+                # Start audio playback immediately
                 trial_start_time = ec.start_stimulus()
 
                 # Display question and options RIGHT AFTER starting audio
                 ec.screen_text(f"Question {q_data['question_num']} of 5",
-                              pos=[0, 0.5], units='norm', color='w', font_size=18)
+                              pos=[0, 0.8], units='norm', color='w', font_size=18)
 
                 if options is None:
                     # Free response
@@ -386,7 +380,7 @@ with ExperimentController(**ec_args) as ec:
                 # Keep question visible and wait for space to continue (experimenter control only)
                 # Redraw the question text so it stays on screen
                 ec.screen_text(f"Question {q_data['question_num']} of 5",
-                              pos=[0, 0.5], units='norm', color='w', font_size=18)
+                              pos=[0, 0.8], units='norm', color='w', font_size=18)
 
                 if options is None:
                     # Free response
@@ -412,12 +406,9 @@ with ExperimentController(**ec_args) as ec:
                 ec.flip()
 
             # Wait for experimenter to press space
-            ec.wait_for_presses(max_wait=np.inf, live_keys=['space'])
+            ec.wait_one_press(max_wait=np.inf, live_keys=['space'])
 
-            if options is None:
-                response = "verbal_response"
-            else:
-                response = "displayed"
+            response = "verbal_response"
 
             # Store response
             story_responses[f"q{q_data['question_num']}_response"] = response

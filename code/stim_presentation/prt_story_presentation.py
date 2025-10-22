@@ -273,9 +273,7 @@ with ExperimentController(**ec_args) as ec:
     print("Sound check completed!")
 
     # Ask if sound is okay
-    ec.screen_text("Sound Check Complete", pos=[0, 0.3], units='norm', color='w', font_size=32)
-    ec.flip()
-    ec.wait_one_press(max_wait=np.inf, live_keys=['space'])
+    ec.screen_prompt("Sound Check Complete.", live_keys=['space'])
 
     # Show instruction before first story
     ec.screen_prompt(first_story_instruction, live_keys=['space'])
@@ -466,7 +464,7 @@ with ExperimentController(**ec_args) as ec:
         ec.wait_secs(0.5)
 
     # End of experiment
-    ec.screen_prompt("Thank you for participating!\n\nPress SPACE to exit.",
+    ec.screen_prompt("Ya did it! \n\nThank you for participating!",
                     live_keys=['space'])
 
 print("\nExperiment completed successfully!")

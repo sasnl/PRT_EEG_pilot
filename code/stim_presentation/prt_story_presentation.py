@@ -71,6 +71,22 @@ while True:
 
 print(f"\nStarting from story {start_story_idx + 1}: {stories_df.iloc[start_story_idx]['story_name']}")
 
+# Ask if user wants to run sound check test trial (only if starting from story 1)
+run_test_trial = False
+if start_story_idx == 0:
+    while True:
+        test_input = input("\nDo you want to run the sound check test trial? (y/n): ").strip().lower()
+        if test_input in ['y', 'yes']:
+            run_test_trial = True
+            print("Sound check test trial will be included.")
+            break
+        elif test_input in ['n', 'no']:
+            run_test_trial = False
+            print("Skipping sound check test trial.")
+            break
+        else:
+            print("Please enter 'y' or 'n'")
+
 # Filter stories from starting point
 stories_df = stories_df.iloc[start_story_idx:].reset_index(drop=True)
 
@@ -231,49 +247,49 @@ with ExperimentController(**ec_args) as ec:
     ec.screen_prompt(instruction_text_2, live_keys=['space'])
     ec.screen_prompt(instruction_text_3, live_keys=['space'])
 
+    # Test trial - play first 10 seconds of first story for sound check (if requested)
+    if run_test_trial:
+        # Preload first story for sound check
+        first_story_id = stories_df.iloc[0]['story_id']
+        print(f"\nPreloading first story for sound check: {first_story_id}")
+        show_loading_screen(ec, "Preparing sound check...")
+        if story_audio[first_story_id] is not None:
+            ec.load_buffer(story_audio[first_story_id])
 
-    # Test trial - play first 10 seconds of first story for sound check
-    # Preload first story for sound check
-    first_story_id = stories_df.iloc[0]['story_id']
-    print(f"\nPreloading first story for sound check: {first_story_id}")
-    show_loading_screen(ec, "Preparing sound check...")
-    if story_audio[first_story_id] is not None:
-        ec.load_buffer(story_audio[first_story_id])
+        ec.screen_text("Sound Check", pos=[0, 0.3], units='norm', color='w', font_size=32)
+        ec.screen_text("We will play 10 seconds of the first story to check the sound.",
+                      pos=[0, 0], units='norm', color='w', font_size=24, wrap=True)
+        ec.flip()
+        ec.wait_one_press(max_wait=np.inf, live_keys=['space'])
 
-    ec.screen_text("Sound Check", pos=[0, 0.3], units='norm', color='w', font_size=32)
-    ec.screen_text("We will play 10 seconds of the first story to check the sound.",
-                  pos=[0, 0], units='norm', color='w', font_size=24, wrap=True)
-    ec.flip()
-    ec.wait_one_press(max_wait=np.inf, live_keys=['space'])
+        # Show fixation cross
+        ec.screen_text("+", pos=(0.75, 0), units='norm', color='white', font_size=64)
+        ec.flip()
+        ec.wait_secs(1.0)
 
-    # Show fixation cross
-    ec.screen_text("+", pos=(0.75, 0), units='norm', color='white', font_size=64)
-    ec.flip()
-    ec.wait_secs(1.0)
+        # Identify trial before starting
+        ec.identify_trial(ec_id="sound_check", ttl_id=[])
 
-    # Identify trial before starting
-    ec.identify_trial(ec_id="sound_check", ttl_id=[])
+        # Play first 10 seconds
+        print("\nPlaying 10-second sound check...")
+        test_duration = 10.0  # 10 seconds
+        test_start_time = ec.start_stimulus()
 
-    # Play first 10 seconds
-    print("\nPlaying 10-second sound check...")
-    test_duration = 10.0  # 10 seconds
-    test_start_time = ec.start_stimulus()
+        # Keep cross visible during playback
+        ec.screen_text("+", pos=(0.75, 0), units='norm', color='white', font_size=64)
+        ec.flip()
 
-    # Keep cross visible during playback
-    ec.screen_text("+", pos=(0.75, 0), units='norm', color='white', font_size=64)
-    ec.flip()
+        # Wait for 10 seconds
+        while ec.current_time < test_start_time + test_duration:
+            ec.check_force_quit()
+            ec.wait_secs(0.1)
 
-    # Wait for 10 seconds
-    while ec.current_time < test_start_time + test_duration:
-        ec.check_force_quit()
-        ec.wait_secs(0.1)
+        ec.stop()
+        ec.trial_ok()
+        print("Sound check completed!")
 
-    ec.stop()
-    ec.trial_ok()
-    print("Sound check completed!")
-
-    # Ask if sound is okay
-    ec.screen_prompt("Sound Check Complete.", live_keys=['space'])
+        # Ask if sound is okay
+        ec.screen_prompt("Sound Check Complete.", live_keys=['space'])
 
     # Show instruction before first story
     ec.screen_prompt(first_story_instruction, live_keys=['space'])

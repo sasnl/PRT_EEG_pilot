@@ -236,6 +236,43 @@ with ExperimentController(**ec_args) as ec:
     if story_audio[first_story_id] is not None:
         ec.load_buffer(story_audio[first_story_id])
 
+    # Test trial - play first 10 seconds of first story for sound check
+    ec.screen_text("Sound Check", pos=[0, 0.3], units='norm', color='w', font_size=32)
+    ec.screen_text("We will play 10 seconds of the first story to check the sound.",
+                  pos=[0, 0], units='norm', color='w', font_size=24, wrap=True)
+    ec.flip()
+    ec.wait_one_press(max_wait=np.inf, live_keys=['space'])
+
+    # Show fixation cross
+    ec.screen_text("+", pos=(0.75, 0), units='norm', color='white', font_size=64)
+    ec.flip()
+    ec.wait_secs(1.0)
+
+    # Play first 10 seconds
+    print("\nPlaying 10-second sound check...")
+    test_duration = 10.0  # 10 seconds
+    test_start_time = ec.start_stimulus()
+
+    # Keep cross visible during playback
+    ec.screen_text("+", pos=(0.75, 0), units='norm', color='white', font_size=64)
+    ec.flip()
+
+    # Wait for 10 seconds
+    while ec.current_time < test_start_time + test_duration:
+        ec.check_force_quit()
+        ec.wait_secs(0.1)
+
+    ec.stop()
+    print("Sound check completed!")
+
+    # Ask if sound is okay
+    ec.screen_text("Sound Check Complete", pos=[0, 0.3], units='norm', color='w', font_size=32)
+    ec.flip()
+    ec.wait_one_press(max_wait=np.inf, live_keys=['space'])
+
+    # Reload first story buffer for actual experiment
+    ec.load_buffer(story_audio[first_story_id])
+
     trial_start_time = -np.inf
 
     # Loop through each story

@@ -178,49 +178,42 @@ def background_load_buffer(ec, audio_data, trial_id, callback=None):
 
 
 # %% Experiment instructions
-instruction_text_1 = """Welcome to the Story Listening Game!
+instruction_text_1 = """Welcome to the Listening Activity!\n\n
 
-You will listen to 5 different stories.
+You will listen to 5 different stories.\n
 
-When the story plays, stare at the cross (+) on the screen.
-
-After each story, you will answer 5 questions about it.
+After each story, you will answer 5 questions about what you heard.\n
 
 """
 
-instruction_text_2 = """
-For all questions, tell us your answer out loud.
+# instruction_text_2 = """
+# For all questions, tell us your answer out loud.
 
-Some questions will show you answer choices on the screen.
-You can read the choices (A, B, C, D).
+# Some questions will have choices, and some will not. 
 
-Other questions are open-ended, so you can answer however you like.
+# Say your answer out loud, and speak loudly and clearly.
+
+# """
+
+instruction_text_3 = """
+
+Just relax and listen carefully to each story!\n
+
+Take your time and do your best.\n
 
 """
 
-instruction_text_3 = """Remember:
-
-Just relax and listen carefully to each story!
-
-Take your time and do your best.
-
-"""
-
-first_story_instruction = """Great! Now we're ready to start.
+first_story_instruction = """Great! We are ready to start.\n
 
 Remember:
 
-- Listen carefully to each story
+- Listen carefully to each story\n
 
-- When the story plays, stare at the cross (+) on the screen
+- When the story plays, keep your eyes on the cross (+) in the middle of the screen.\n
 
-- After the story, you'll hear questions
+- Do your best to stay as still as you can while the stories are playing.\n
 
-- Some questions have choices (A, B, C, D)
-
-- Some questions you answer by talking
-
-Let's begin with the first story!
+Let's begin with the first story!\n
 
 """
 
@@ -244,7 +237,7 @@ n_bits_question = int(np.ceil(np.log2(5)))  # Max 5 questions per story
 with ExperimentController(**ec_args) as ec:
     # Show initial instructions (3 screens)
     ec.screen_prompt(instruction_text_1, live_keys=['space'])
-    ec.screen_prompt(instruction_text_2, live_keys=['space'])
+    # ec.screen_prompt(instruction_text_2, live_keys=['space'])
     ec.screen_prompt(instruction_text_3, live_keys=['space'])
 
     # Test trial - play first 10 seconds of first story for sound check (if requested)
@@ -289,7 +282,7 @@ with ExperimentController(**ec_args) as ec:
         print("Sound check completed!")
 
         # Ask if sound is okay
-        ec.screen_prompt("Sound Check Complete.", live_keys=['space'])
+        ec.screen_prompt("You should have heard the sounds coming from both (R/L) headphones.", live_keys=['space'])
 
     # Show instruction before first story
     ec.screen_prompt(first_story_instruction, live_keys=['space'])
@@ -345,6 +338,8 @@ with ExperimentController(**ec_args) as ec:
 
             # Wait for story to finish - cross stays on screen the whole time
             while ec.current_time < trial_start_time + story_duration:
+            #to skip story playing uncomment the line below and comment the one above
+            #while ec.current_time < trial_start_time + 0.5:
                 ec.check_force_quit()
                 ec.wait_secs(0.1)
 
@@ -365,7 +360,7 @@ with ExperimentController(**ec_args) as ec:
 
         # Show transition to questions (only before first question)
         ec.screen_text(f"Story finished!", pos=[0, 0.2], units='norm', color='w')
-        ec.screen_text(f"Now you will answer 5 questions about this story.",
+        ec.screen_text(f" Now you will answer some questions about this story.\n You will see the question on the screen and you will also hear the question.\n Please wait until the whole question is read aloud and then tell us your answer.",
                       pos=[0, -0.1], units='norm', color='w')
 
         ec.flip()
@@ -401,14 +396,14 @@ with ExperimentController(**ec_args) as ec:
                     # Free response
                     ec.screen_text(q_data['question_text'], pos=[0, 0.4], units='norm',
                                   color='w', font_size=32, wrap=True)
-                    ec.screen_text("Answer out loud after the question finishes.",
-                                  pos=[0, -0.1], units='norm', color='yellow', font_size=22)
+                    # ec.screen_text("Answer out loud after the question finishes.",
+                    #               pos=[0, -0.1], units='norm', color='yellow', font_size=22)
                 else:
                     # Multiple choice
                     ec.screen_text(q_data['question_text'], pos=[0, 0.5], units='norm',
                                   color='w', font_size=28, wrap=True)
-                    ec.screen_text("Read the answer choices after the question finishes:",
-                                  pos=[0, 0.25], units='norm', color='yellow', font_size=22)
+                    # ec.screen_text("Read the answer choices after the question finishes:",
+                    #               pos=[0, 0.25], units='norm', color='yellow', font_size=22)
 
                     # Display answer options
                     y_start = 0.0
@@ -442,14 +437,14 @@ with ExperimentController(**ec_args) as ec:
                     # Free response
                     ec.screen_text(q_data['question_text'], pos=[0, 0.4], units='norm',
                                   color='w', font_size=32, wrap=True)
-                    ec.screen_text("Answer out loud.",
-                                  pos=[0, -0.1], units='norm', color='yellow', font_size=22)
+                    # ec.screen_text("Answer out loud.",
+                    #               pos=[0, -0.1], units='norm', color='yellow', font_size=22)
                 else:
                     # Multiple choice
                     ec.screen_text(q_data['question_text'], pos=[0, 0.5], units='norm',
                                   color='w', font_size=28, wrap=True)
-                    ec.screen_text("Read your answer choice:",
-                                  pos=[0, 0.25], units='norm', color='yellow', font_size=22)
+                    # ec.screen_text("Read your answer choice:",
+                    #               pos=[0, 0.25], units='norm', color='yellow', font_size=22)
 
                     # Display answer options
                     y_start = 0.0
